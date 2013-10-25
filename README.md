@@ -9,9 +9,9 @@ that to query the live price data to see what the current value of your holdings
 ## Setup
 
     git clone git@github.com:samdolan/pyspotprice.git
+    cd pyspotprice
     mkvirtualenv pyspotprice
     pip install -r requirements.txt
-    chmod a+x pyspotprice.py
     python pyspotprice.py --help
     
     
