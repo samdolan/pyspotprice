@@ -12,7 +12,8 @@ that to query the live price data to see what the current value of your holdings
     cd pyspotprice
     mkvirtualenv pyspotprice
     pip install -r requirements.txt
-    python pyspotprice.py --help
+    chmod +x pyspotprice.py
+    ./pyspotprice.py --help
     
     
 ### Available options   
