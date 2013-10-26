@@ -31,3 +31,79 @@ that to query the live price data to see what the current value of your holdings
 
 
 By default the script runs the --all flag that looks at your local inventory portfolio and checks it against the live prices.
+
+### Example usage
+
+    (pyspotprice) $ ./pyspotprice.py --update
+    ---- Existing inventory   ---------------------------------------------------------
+    +----------+----------+
+    | Metal    | Quantity |
+    +----------+----------+
+    | platinum |        0 |
+    | silver   |        0 |
+    | gold     |        0 |
+    +----------+----------+
+    ---- Update inventory   -----------------------------------------------------------
+    Platinum => 0
+    Silver => 1
+    Gold => 2
+    Which ID would you like to update? 0
+    What is the new value in ounces? 2
+    Saved!
+    ---- Updated inventory   ----------------------------------------------------------
+    +----------+----------+
+    | Metal    | Quantity |
+    +----------+----------+
+    | platinum |      2.0 |
+    | silver   |        0 |
+    | gold     |        0 |
+    +----------+----------+
+
+    (pyspotprice) $ ./pyspotprice.py --update
+    ---- Existing inventory   ---------------------------------------------------------
+    +----------+----------+
+    | Metal    | Quantity |
+    +----------+----------+
+    | platinum |      2.0 |
+    | silver   |        0 |
+    | gold     |        0 |
+    +----------+----------+
+    ---- Update inventory   -----------------------------------------------------------
+    Platinum => 0
+    Silver => 1
+    Gold => 2
+    Which ID would you like to update? 2
+    What is the new value in ounces? 35
+    Saved!
+    ---- Updated inventory   ----------------------------------------------------------
+    +----------+----------+
+    | Metal    | Quantity |
+    +----------+----------+
+    | platinum |      2.0 |
+    | silver   |        0 |
+    | gold     |     35.0 |
+    +----------+----------+
+
+    (pyspotprice) $ ./pyspotprice.py --prices
+    ---- Current prices   -------------------------------------------------------------
+    Downloading page....
+    Finished download.
+    +----------+------------+------------+--------+--------+--------------+----------+
+    | Metal    |    Date    | Time (EST) |    Bid |    Ask | Change (USD) | Change % |
+    +----------+------------+------------+--------+--------+--------------+----------+
+    | Platinum | 10/25/2013 | 17:04      | 1451.0 | 1461.0 |          5.0 |     0.35 |
+    | Silver   | 10/25/2013 | 17:14      |   22.6 |   22.7 |        -0.13 |    -0.55 |
+    | Gold     | 10/25/2013 | 17:14      | 1352.9 | 1353.9 |          5.6 |     0.42 |
+    +----------+------------+------------+--------+--------+--------------+----------+
+
+    (pyspotprice) $ ./pyspotprice.py
+    Downloading page....
+    Finished download.
+    +----------+----------+--------+----------+
+    | Metal    | Quantity |    Ask |    Total |
+    +----------+----------+--------+----------+
+    | Platinum |      2.0 | 1461.0 |   2922.0 |
+    | Silver   |        0 |   22.7 |      0.0 |
+    | Gold     |     35.0 | 1353.9 |  47386.5 |
+    |          |          |  Total | $50308.5 |
+    +----------+----------+--------+----------+

@@ -1,6 +1,8 @@
 #!/usr/bin/env python
 
+from __future__ import print_function
 from bs4 import BeautifulSoup
+from prettytable import PrettyTable
 import requests
 import os
 import argparse
@@ -25,6 +27,7 @@ class SpotInfo(object):
     :param metal_type: A key in ```ALL_METALS```
     :param info_cells: A list of bs4 "td" soup objects.
     """
+
     def __init__(self, metal_type, info_cells):
         self.metal_type = metal_type
 
@@ -32,10 +35,10 @@ class SpotInfo(object):
         self.info_cells = info_cells
 
         # The date string the data was created in "%m/%d/%Y" format
-        self.date = get_cell_value(info_cells[4])
+        self.date = str(get_cell_value(info_cells[4]))
 
         # The time of the data was created
-        self.time_est = get_cell_value(info_cells[5])
+        self.time_est = str(get_cell_value(info_cells[5]))
         self.bid_cents = \
             self._convert_usd_string_cents(get_cell_value(info_cells[6]))
         self.ask_cents = \
@@ -119,7 +122,7 @@ class InventoryStore(object):
         :param quantity: An int or float with the quantity.
         """
         assert isinstance(quantity, (int, float)), \
-                "quantity must be an int or float. Got: {}".format(quantity)
+            "quantity must be an int or float. Got: {}".format(quantity)
 
         self.inventory_map[metal_type] = quantity
 
@@ -127,23 +130,21 @@ class InventoryStore(object):
 def get_content(url):
     """Get the content from the specified url.
 
-    If there is
+    If there is an exception we'll retry until the user cancels.
     """
-    print 'Downloading page....'
-
+    print('Downloading page....')
 
     try:
         resp = requests.get(URL)
     except Exception as e:
         retry_secs = 15
-        print "Got exception fetching content. Sleeping for {} secs. {}".format(
-                retry_secs, e
-        )
+        print("Got exception fetching content. Sleeping for {} secs. {}".format(
+            retry_secs, e
+        ))
         time.sleep(retry_secs)
         return get_content(url)
 
-
-    print 'Finished download.'
+    print('Finished download.')
     return resp.content
 
 
@@ -187,7 +188,6 @@ def parse_prices(content):
     return spot_info
 
 
-
 def get_prices_dict():
     """Download and parse the page."""
     content = get_content(URL)
@@ -199,22 +199,42 @@ def print_prices(prices_dict=None):
     """Print out a table of all of the current prices and changes."""
     prices_dict = prices_dict or get_prices_dict()
 
-    print "Metal | Date | Time (EST) | Bid | Ask | Change (USD) | Change %"
+    cols = ("Metal", "Date", "Time (EST)", "Bid",
+            "Ask", "Change (USD)", "Change %")
+    table = PrettyTable(cols, title="Current Prices")
+    table.align['Metal'] = 'l'
+    table.align['Time (EST)'] = 'l'
+    table.align['Bid'] = 'r'
+    table.align['Ask'] = 'r'
+    table.align['Change (USD)'] = 'r'
+    table.align['Change %'] = 'r'
+
     for k, spot_info in prices_dict.items():
-        print u"{} | {} | {} | ${} | ${} | {}%".format(
+        row = (
             k.capitalize(), spot_info.date, spot_info.time_est,
             spot_info.bid, spot_info.ask,
             spot_info.change_usd, spot_info.change_percent,
         )
+        table.add_row(row)
+
+    print(table)
+
+    return prices_dict
 
 
 def print_inventory():
     """Print out our local metal inventory"""
     inventory = InventoryStore()
 
-    print "Metal | Quantity (oz)"
-    for  metal_type, quantity in inventory.inventory_map.items():
-        print "{} | {}".format(metal_type, quantity)
+    cols = ("Metal", "Quantity")
+    table = PrettyTable(cols, title="Current Inventory")
+    table.align['Metal'] = 'l'
+    table.align['Quantity'] = 'r'
+
+    for metal_type, quantity in inventory.inventory_map.items():
+        table.add_row((metal_type, quantity))
+
+    print(table)
 
     return inventory
 
@@ -229,29 +249,29 @@ def update_inventory():
     inventory = InventoryStore()
 
     option_dict = dict((i, k)
-            for i, k in enumerate(inventory.inventory_map.iterkeys()))
+                       for i, k in enumerate(inventory.inventory_map.iterkeys()))
 
     for i, name in option_dict.items():
-        print "{1} => {0}".format(i, name.capitalize())
+        print("{1} => {0}".format(i, name.capitalize()))
 
     try:
         selected_val = int(raw_input("Which ID would you like to update? "))
         if selected_val > len(option_dict.keys()) - 1:
-            print 'Please select a valid value'
+            print('Please select a valid value')
             return update_inventory()
 
         new_val = float(raw_input("What is the new value in ounces? "))
     except ValueError:
         # we messed up, just redisplay the prompts
 
-        print "Please enter an int or float!"
+        print("Please enter an int or float!")
         return update_inventory()
 
     # Save that bad boy
     inventory.set_quantity(option_dict[selected_val], new_val)
     inventory.save()
 
-    print "Saved!"
+    print("Saved!")
 
     return inventory
 
@@ -267,7 +287,14 @@ def print_inventory_values(prices_dict=None, inventory=None):
     prices_dict = prices_dict or get_prices_dict()
     inventory = inventory or InventoryStore()
 
-    print 'Metal | Total | Change'
+    rows = ('Metal', 'Quantity', 'Ask', 'Total')
+    table = PrettyTable(rows, title="Current inventory values")
+
+    table.align['Metal'] = 'l'
+    table.align['Quantity'] = 'r'
+    table.align['Ask'] = 'r'
+    table.align['Total'] = 'r'
+
     total_cents = 0
     for metal_type, quantity in inventory.inventory_map.items():
         # Get the price info for this metal
@@ -277,47 +304,51 @@ def print_inventory_values(prices_dict=None, inventory=None):
         metal_inventory = inventory.inventory_map[metal_type]
 
         # What's the total worth?
-        total_metal_cents = spot_info.bid_cents * metal_inventory
+        total_metal_cents = spot_info.ask_cents * metal_inventory
 
         # Increase our running total to display later
         total_cents += total_metal_cents
 
-        print '{} | ${} | {}'.format(metal_type.capitalize(), total_metal_cents / 100.0, 0)
+        table.add_row((metal_type.capitalize(),
+                       metal_inventory,
+                       spot_info.ask,
+                       total_metal_cents / 100.0))
 
-    print 'Total: ${}'.format(total_cents / 100.0)
+    table.add_row(('', '',
+                   'Total', '${}'.format(total_cents / 100.0)))
+
+    print(table)
 
 
 def _print_header(header_text):
     """Helper method to display a header for the various sections"""
     line_length = 80
-    print '-' * 4, header_text, ' ',  \
-        (line_length - len(header_text) - 5) * '-'
+    print('-' * 4, header_text, ' ', \
+          (line_length - len(header_text) - 5) * '-')
 
 
 def main():
     parser = argparse.ArgumentParser()
     parser.add_argument("-i", "--inventory", action="store_true",
-            help="Print out the current portfolio inventory")
+                        help="Print out the current portfolio inventory")
 
     parser.add_argument("-u", "--update", action="store_true",
-            help="Update your portfolio")
+                        help="Update your portfolio")
 
     parser.add_argument("-p", "--prices", action="store_true",
-            help="Print out the current market prices")
+                        help="Print out the current market prices")
 
     parser.add_argument("-a", "--all", action="store_true",
-            help="Print out the current prices and the market value of the portfolio")
+                        help="Print out the current prices and the market value of the portfolio")
 
     parser.add_argument("-c", "--clear", action="store_true",
-            help="Clear out the data store and set the default values.")
-
+                        help="Clear out the data store and set the default values.")
 
     args = parser.parse_args()
 
     print
 
     if args.inventory:
-        _print_header('Current inventory')
         print_inventory()
 
     elif args.update:
@@ -336,27 +367,19 @@ def main():
 
     elif args.clear:
         answer = raw_input("Are you sure you want to clear your data store? "
-                "If so type 'yes': ")
+                           "If so type 'yes': ")
         if answer != 'yes':
-            print 'Clearing cancelled.'
+            print('Clearing cancelled.')
             return
         else:
             _print_header('Clearing store')
             inventory = InventoryStore()
             inventory.clear()
-            print 'Cleared.'
+            print('Cleared.')
 
     # Default should be print the inventory and current prices
     else:
-        _print_header('Existing inventory')
-        inventory = print_inventory()
-
-        _print_header('Current prices')
-        prices_dict = print_prices()
-
-
-        _print_header('Current values')
-        print_inventory_values(prices_dict, inventory)
+        print_inventory_values()
 
 
 if __name__ == '__main__':
