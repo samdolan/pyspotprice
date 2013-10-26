@@ -283,7 +283,12 @@ def update_inventory():
         current_value = inventory.get_quantity(name)
         print("{0} | Current Quantity: {1}".format(name.capitalize(), current_value))
 
-        new_value = raw_input('New value (exact value or +/- offset): ')
+        new_value = raw_input('New value (exact value or +/- offset or empty to keep the current value): ')
+
+        # if nothing was entered, keep the existing value
+        if new_value == '':
+            continue
+
         inventory.set_quantity(name, new_value)
 
     inventory.save()
