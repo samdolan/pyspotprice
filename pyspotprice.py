@@ -112,19 +112,47 @@ class InventoryStore(object):
     def set_quantity(self, metal_type, quantity):
         """Helper method to set a metal_types' quantity.
 
-        You are responsible for calling our save method to persist the changes
+        Caller is responsible for calling our save method to persist the changes
         to disk.
 
-        TODO: Add support for offsets. For example: a string of "+10" increase
-        the quantity by 10
-
-        :param metal_types: A metal type in ALL_METALS
+        :param metal_type: A metal type in ALL_METALS
         :param quantity: An int or float with the quantity.
         """
-        assert isinstance(quantity, (int, float)), \
-            "quantity must be an int or float. Got: {}".format(quantity)
+        add = False
+        if quantity.startswith('+'):
+            quantity = quantity.replace('+', '')
+            add = True
 
-        self.inventory_map[metal_type] = quantity
+        subtract = False
+        if quantity.startswith('-'):
+            quantity = quantity.replace('-', '')
+            subtract = True
+
+        try:
+            quantity = float(quantity)
+        except ValueError:
+            raise
+
+        new_quantity = self.get_quantity(metal_type)
+        if add:
+            new_quantity += quantity
+        elif subtract:
+            new_quantity -= quantity
+        else:
+            new_quantity = quantity
+
+        if new_quantity < 0:
+            new_quantity = 0
+
+        self.inventory_map[metal_type] = new_quantity
+
+    def get_quantity(self, metal_type):
+        """Get the current quantity for the passed in metal_type.
+
+        :param metal_type: The metal type from ALL_METALS
+        :returns: The current quantity of the metal in our database.
+        """
+        return self.inventory_map.get(metal_type, 0)
 
 
 def get_content(url):
@@ -252,23 +280,12 @@ def update_inventory():
                        for i, k in enumerate(inventory.inventory_map.iterkeys()))
 
     for i, name in option_dict.items():
-        print("{1} => {0}".format(i, name.capitalize()))
+        current_value = inventory.get_quantity(name)
+        print("{0} | Current Quantity: {1}".format(name.capitalize(), current_value))
 
-    try:
-        selected_val = int(raw_input("Which ID would you like to update? "))
-        if selected_val > len(option_dict.keys()) - 1:
-            print('Please select a valid value')
-            return update_inventory()
+        new_value = raw_input('New value (exact value or +/- offset): ')
+        inventory.set_quantity(name, new_value)
 
-        new_val = float(raw_input("What is the new value in ounces? "))
-    except ValueError:
-        # we messed up, just redisplay the prompts
-
-        print("Please enter an int or float!")
-        return update_inventory()
-
-    # Save that bad boy
-    inventory.set_quantity(option_dict[selected_val], new_val)
     inventory.save()
 
     print("Saved!")
@@ -352,10 +369,6 @@ def main():
         print_inventory()
 
     elif args.update:
-        _print_header('Existing inventory')
-        print_inventory()
-
-        _print_header('Update inventory')
         update_inventory()
 
         _print_header('Updated inventory')
