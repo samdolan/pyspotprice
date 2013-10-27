@@ -95,7 +95,7 @@ class InventoryStore(object):
         returned.
         """
         if not os.path.exists(INVENTORY_FILE_PATH):
-            return self.get_default_dict()
+            return self.get_default_map()
         with open(INVENTORY_FILE_PATH, 'r') as f:
             return json.loads(f.read())
 
