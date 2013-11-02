@@ -7,6 +7,7 @@ import requests
 import os
 import argparse
 import json
+import datetime
 import time
 
 # Misc. constants
@@ -369,6 +370,8 @@ def main():
     args = parser.parse_args()
 
     print
+
+    print(datetime.datetime.now())
 
     if args.inventory:
         print_inventory()
